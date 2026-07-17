@@ -44,7 +44,7 @@ def generator_view(request):
             if not key:
                 key = 'OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=' #default rustdesk key
             if not apiServer:
-                apiServer = server+":21114"
+                apiServer = "https://"+server
             if not urlLink:
                 urlLink = "https://rustdesk.com"
             if not downloadLink:
@@ -198,6 +198,9 @@ def generator_view(request):
                 decodedCustom['override-settings']['enable-remote-printer'] = 'Y' if enablePrinter else 'N'
                 decodedCustom['override-settings']['enable-camera'] = 'Y' if enableCamera else 'N'
                 decodedCustom['override-settings']['enable-terminal'] = 'Y' if enableTerminal else 'N'
+
+            if apiServer:
+                decodedCustom['override-settings']['api-server'] = apiServer
 
             for line in defaultManual.splitlines():
                 k, value = line.split('=')
@@ -573,3 +576,4 @@ def get_zip(request):
         })
 
     return response
+

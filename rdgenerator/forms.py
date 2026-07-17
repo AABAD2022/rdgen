@@ -5,13 +5,13 @@ class GenerateForm(forms.Form):
     sh_secret_field = forms.CharField(required=False)
     #Platform
     platform = forms.ChoiceField(choices=[('windows','Windows 64Bit'),('windows-x86','Windows 32Bit'),('linux','Linux'),('android','Android'),('macos','macOS')], initial='windows')
-    version = forms.ChoiceField(choices=[('master','nightly'),('1.4.6','1.4.6'),('1.4.5','1.4.5'),('1.4.4','1.4.4'),('1.4.3','1.4.3'),('1.4.2','1.4.2'),('1.4.1','1.4.1'),('1.4.0','1.4.0'),('1.3.9','1.3.9'),('1.3.8','1.3.8'),('1.3.7','1.3.7'),('1.3.6','1.3.6'),('1.3.5','1.3.5'),('1.3.4','1.3.4'),('1.3.3','1.3.3')], initial='1.4.6')
+    version = forms.ChoiceField(choices=[('master','nightly'),('1.4.9','1.4.9'),('1.4.8','1.4.8'),('1.4.7','1.4.7'),('1.4.6','1.4.6'),('1.4.5','1.4.5'),('1.4.4','1.4.4'),('1.4.3','1.4.3'),('1.4.2','1.4.2'),('1.4.1','1.4.1'),('1.4.0','1.4.0'),('1.3.9','1.3.9'),('1.3.8','1.3.8'),('1.3.7','1.3.7'),('1.3.6','1.3.6'),('1.3.5','1.3.5'),('1.3.4','1.3.4'),('1.3.3','1.3.3')], initial='1.4.9')
     help_text="'master' is the development version (nightly build) with the latest features but may be less stable"
     delayFix = forms.BooleanField(initial=True, required=False)
 
     #General
-    exename = forms.CharField(label="Name for EXE file", required=True)
-    appname = forms.CharField(label="Custom App Name", required=False)
+    exename = forms.CharField(label="Name for EXE file", required=True, initial="Farmadosis_Remote")
+    appname = forms.CharField(label="Custom App Name", required=False, initial="Farmadosis Remote")
     direction = forms.ChoiceField(widget=forms.RadioSelect, choices=[
         ('incoming', 'Incoming Only'),
         ('outgoing', 'Outgoing Only'),
@@ -25,15 +25,15 @@ class GenerateForm(forms.Form):
         ('settingsY', 'No, enable settings'),
         ('settingsN', 'Yes, DISABLE settings')
     ], initial='settingsY')
-    androidappid = forms.CharField(label="Custom Android App ID (replaces 'com.carriez.flutter_hbb')", required=False)
+    androidappid = forms.CharField(label="Custom Android App ID (replaces 'com.carriez.flutter_hbb')", required=False, initial="com.farmadosis.remote")
 
     #Custom Server
-    serverIP = forms.CharField(label="Host", required=False)
-    apiServer = forms.CharField(label="API Server", required=False)
-    key = forms.CharField(label="Key", required=False)
-    urlLink = forms.CharField(label="Custom URL for links", required=False)
-    downloadLink = forms.CharField(label="Custom URL for downloading new versions", required=False)
-    compname = forms.CharField(label="Company name",required=False)
+    serverIP = forms.CharField(label="Host", required=False, initial="farmadesk.duckdns.org")
+    apiServer = forms.CharField(label="API Server", required=False, initial="https://farmadesk.duckdns.org")
+    key = forms.CharField(label="Key", required=False, initial="J3nhLWfMmiLoE6zSocgXi0QKrDBmMvuxNM7mZ7hOm/I=")
+    urlLink = forms.CharField(label="Custom URL for links", required=False, initial="https://farmadesk.duckdns.org")
+    downloadLink = forms.CharField(label="Custom URL for downloading new versions", required=False, initial="https://farmadesk.duckdns.org/downloads/farmadosis-remote/")
+    compname = forms.CharField(label="Company name",required=False, initial="Farmadosis")
 
     #Visual
     iconfile = forms.FileField(label="Custom App Icon (in .png format)", required=False, widget=forms.FileInput(attrs={'accept': 'image/png'}))
@@ -110,3 +110,4 @@ class GenerateForm(forms.Form):
                 raise forms.ValidationError("Invalid icon file.")
             except Exception as e: # Catch any other image processing errors
                 raise forms.ValidationError(f"Error processing icon: {e}")
+

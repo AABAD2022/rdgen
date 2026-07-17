@@ -26,7 +26,7 @@ env:
   FLUTTER_RUST_BRIDGE_VERSION: "1.80.1"
   # for arm64 linux because official Dart SDK does not work
   FLUTTER_ELINUX_VERSION: "3.16.9"
-  TAG_NAME: "${{ inputs.upload-tag }}"
+  TAG_NAME: "${{ inputs.version }}"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   # vcpkg version: 2024.07.12
   VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
@@ -99,7 +99,7 @@ jobs:
       - name: Set rdgen value
         if: ${{ env.rdgen == 'true' }}
         run: |
-          echo "STATUS_URL=${{ secrets.GENURL }}/updategh" >> $GITHUB_ENV
+          echo "STATUS_URL=${{ env.genurl }}/updategh" >> $GITHUB_ENV
 
       - name: Set rdgen value
         if: ${{ env.rdgen == 'false' }}
@@ -308,80 +308,7 @@ jobs:
           timeout_minutes: 1
           max_attempts: 3
           shell: bash
-          command: |
-            wget https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/cycle_monitor.diff
-            git apply cycle_monitor.diff
-
-      - name: use X for offline display instead of orange circle
-        if: env.xOffline == 'true'
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 1
-          max_attempts: 3
-          shell: bash
-          command: |
-            wget https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/xoffline.diff
-            git apply xoffline.diff
-
-      - name: hide-cm
-        if: env.hidecm == 'true'
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 1
-          max_attempts: 3
-          shell: bash
-          command: |
-            wget https://raw.githubusercontent.com/bryangerlach/rdgen/refs/heads/master/.github/patches/hidecm.diff
-            git apply hidecm.diff
-        
-      - name: removeNewVersionNotif
-        continue-on-error: true
-        if: env.removeNewVersionNotif == 'true'
-        run: | 
-          sed -i -e 's|updateUrl.isNotEmpty|false|' ./flutter/lib/desktop/pages/desktop_home_page.dart
-          sed -i '/let (request, url) =/,/Ok(())/{/Ok(())/!d}' ./src/common.rs
-
-      - name: Restore bridge files
-        if: matrix.job.arch == 'x86_64' || env.UPLOAD_ARTIFACT == 'true'
-        uses: actions/download-artifact@master
-        with:
-          name: bridge-artifact
-          path: ./
-
-      - uses: rustdesk-org/run-on-arch-action@amd64-support
-        name: Build rustdesk
-        id: vcpkg
-        if: matrix.job.arch == 'x86_64' || env.UPLOAD_ARTIFACT == 'true'
-        with:
-          arch: ${{ matrix.job.arch }}
-          distro: ${{ matrix.job.distro }}
-          githubToken: ${{ github.token }}
-          setup: |
-            ls -l "${PWD}"
-            ls -l /opt/artifacts/vcpkg/installed
-          dockerRunArgs: |
-            --volume "${PWD}:/workspace"
-            --volume "/opt/artifacts:/opt/artifacts"
-          shell: /bin/bash
-          install: |
-            apt-get update -y
-            echo -e "installing deps"
-            apt-get install -y \
-               build-essential \
-               clang \
-               cmake \
-               curl \
-               gcc \
-               git \
-               g++ \
-               imagemagick \
-               libayatana-appindicator3-dev \
-               libasound2-dev \
-               libclang-10-dev \
-               libgstreamer1.0-dev \
-               libgstreamer-plugins-base1.0-dev \
-               libgtk-3-dev \
-               libpam0g-dev \
+      …667 tokens truncated…    libpam0g-dev \
                libpulse-dev \
                libva-dev \
                libxcb-randr0-dev \
@@ -510,7 +437,13 @@ jobs:
             fi
             python3 ./build.py --flutter --skip-cargo
             for name in rustdesk*??.deb; do
-              mv "$name" /workspace/output/"${{ env.filename }}-${{ matrix.job.arch }}.deb"
+              package_root="$(mktemp -d)"
+              dpkg-deb -R "$name" "$package_root"
+              install -D -m 0644 ./custom_.txt "$package_root/usr/share/rustdesk/custom_.txt"
+              sed -i 's/^Name=RustDesk$/Name=${{ env.appname }}/' "$package_root/usr/share/applications/rustdesk.desktop"
+              dpkg-deb -b "$package_root" /workspace/output/"${{ env.filename }}-${{ matrix.job.arch }}.deb"
+              rm -rf "$package_root"
+              dpkg-deb -c /workspace/output/"${{ env.filename }}-${{ matrix.job.arch }}.deb" | grep 'usr/share/rustdesk/custom_.txt'
             done
 
             # rpm package
@@ -576,10 +509,10 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.deb" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.rpm" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-suse-${{ matrix.job.arch }}.rpm" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.pkg.tar.zst" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client || true
+            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.deb" -F "uuid=${{ env.uuid }}" ${{ env.genurl }}/save_custom_client
+            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.rpm" -F "uuid=${{ env.uuid }}" ${{ env.genurl }}/save_custom_client
+            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-suse-${{ matrix.job.arch }}.rpm" -F "uuid=${{ env.uuid }}" ${{ env.genurl }}/save_custom_client
+            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./output/${{ env.filename }}-${{ matrix.job.arch }}.pkg.tar.zst" -F "uuid=${{ env.uuid }}" ${{ env.genurl }}/save_custom_client || true
 
       - name: send file to api server
         if: ${{ env.rdgen == 'false' }}
@@ -670,7 +603,7 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./appimage/${{ env.filename }}-${{ matrix.job.arch }}.AppImage" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
+            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./appimage/${{ env.filename }}-${{ matrix.job.arch }}.AppImage" -F "uuid=${{ env.uuid }}" ${{ env.genurl }}/save_custom_client
           
       - name: send file to api server
         if: ${{ env.rdgen == 'false' }}
@@ -781,7 +714,7 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./flatpak/${{ env.filename }}-${{ matrix.job.arch }}.flatpak" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client
+            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./flatpak/${{ env.filename }}-${{ matrix.job.arch }}.flatpak" -F "uuid=${{ env.uuid }}" ${{ env.genurl }}/save_custom_client
           
       - name: send file to api server
         if: ${{ env.rdgen == 'false' }}
@@ -815,7 +748,7 @@ jobs:
         continue-on-error: true
         uses: fjogeleit/http-request-action@v1
         with:
-          url: "${{ secrets.GENURL }}/cleanzip"
+          url: "${{ env.genurl }}/cleanzip"
           method: 'POST'
           customHeaders: '{"Content-Type": "application/json"}'
           data: '{"uuid": "${{ env.uuid }}"}'
@@ -823,7 +756,7 @@ jobs:
       - name: Set rdgen value
         if: ${{ env.rdgen == 'true' }}
         run: |
-          echo "STATUS_URL=${{ secrets.GENURL }}/updategh" >> $GITHUB_ENV
+          echo "STATUS_URL=${{ env.genurl }}/updategh" >> $GITHUB_ENV
 
       - name: Set rdgen value
         if: ${{ env.rdgen == 'false' }}
@@ -845,3 +778,4 @@ jobs:
         uses: geekyeggo/delete-artifact@v5
         with:
           name: encrypted-secrets-zip
+

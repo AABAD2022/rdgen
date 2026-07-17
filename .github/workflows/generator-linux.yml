@@ -26,7 +26,7 @@ env:
   FLUTTER_RUST_BRIDGE_VERSION: "1.80.1"
   # for arm64 linux because official Dart SDK does not work
   FLUTTER_ELINUX_VERSION: "3.16.9"
-  TAG_NAME: "${{ inputs.upload-tag }}"
+  TAG_NAME: "${{ inputs.version }}"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   # vcpkg version: 2024.07.12
   VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
@@ -308,7 +308,7 @@ jobs:
           timeout_minutes: 1
           max_attempts: 3
           shell: bash
-  …668 tokens truncated…    libpam0g-dev \
+      …667 tokens truncated…    libpam0g-dev \
                libpulse-dev \
                libva-dev \
                libxcb-randr0-dev \
